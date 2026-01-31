@@ -24,9 +24,9 @@ const (
 	// EphemeralContainerNamePrefix is the prefix for ephemeral container names.
 	// A unique suffix (timestamp) is added per run so you can run reach multiple times on the same pod.
 	EphemeralContainerNamePrefix = "reach-debug"
-	EphemeralContainerName      = EphemeralContainerNamePrefix // kept for backward compatibility / tests
-	DefaultImage                = "busybox"
-	DefaultTimeout              = 5
+	EphemeralContainerName       = EphemeralContainerNamePrefix // kept for backward compatibility / tests
+	DefaultImage                 = "busybox"
+	DefaultTimeout               = 5
 )
 
 // Options holds the reach command options and runtime.

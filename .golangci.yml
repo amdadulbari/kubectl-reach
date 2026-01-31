@@ -18,9 +18,6 @@ linters:
     - unconvert
     - unparam
     - unused
-  disable:
-    - deadcode
-    - varcheck
 
 linters-settings:
   govet:

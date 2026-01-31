@@ -46,7 +46,9 @@ application containers.`,
 	cmd.Flags().StringVar(&o.Image, "image", DefaultImage, "Debug container image (default: busybox)")
 	cmd.Flags().DurationVar(&o.Timeout, "timeout", DefaultTimeout*time.Second, "Timeout for the connection check")
 
-	_ = cmd.MarkFlagRequired("to")
+	if err := cmd.MarkFlagRequired("to"); err != nil {
+		panic(err) // programming error if "to" flag is missing
+	}
 
 	usageWithKubectlPrefix(cmd)
 	return cmd
