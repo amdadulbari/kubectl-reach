@@ -1,6 +1,3 @@
-# Krew plugin manifest for kubectl-reach (plugin name: reach).
-# See: https://krew.sigs.k8s.io/docs/developer-guide/plugin-manifest/
-# Krew plugin manifest for v1.0.0 (sha256 from GitHub release assets).
 apiVersion: krew.googlecontainertools.github.com/v1alpha2
 kind: Plugin
 metadata:
