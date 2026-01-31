@@ -2,78 +2,141 @@
 
 A `kubectl` plugin that tests network connectivity **from** an existing Pod **to** a target (IP, DNS, or Service) by injecting an ephemeral debug container into the source Pod. Useful for verifying if NetworkPolicies or Service Meshes are blocking traffic.
 
-## Requirements
+**Requirements:** Kubernetes 1.25+ (EphemeralContainers). Pure Go; no shell dependencies. Linux, macOS, Windows.
 
-- **Kubernetes 1.25+** (EphemeralContainers is stable).
-- No shell dependencies; pure Go. Works on Linux, macOS, and Windows.
+---
 
 ## Usage
 
-The plugin runs **from** a given Pod (by name) and checks whether it can reach a target `host:port`. The target can be an IP, a DNS name, or a Kubernetes Service. It uses an ephemeral debug container in the source Pod, so the check runs in the same network context (NetworkPolicies, Service Mesh, node) as your workload.
-
 ```bash
-kubectl reach <source-pod-name> --to <target:port> [--namespace <ns>] [options]
+kubectl reach <source-pod-name> --to <target:port> [options]
 ```
 
-### Examples
+- **&lt;source-pod-name&gt;** — Pod to run the check from (same network context as your workload).
+- **--to &lt;host:port&gt;** — Target to probe (IP, hostname, or Kubernetes Service DNS name).
+
+Use `-n` or `--namespace` for the pod’s namespace; standard kubectl flags (`--context`, `--kubeconfig`) work as usual.
+
+---
+
+## Examples
+
+### Reach a public host (HTTPS)
 
 ```bash
-# Reach a public host (HTTPS)
-kubectl reach myapp-abc123 --to google.com:443
-
-# Reach an internal IP and port (default namespace)
-kubectl reach myapp-abc123 --to 10.0.0.5:8080
-
-# Specify namespace
-kubectl reach myapp-abc123 --to myservice:80 -n myns
-
-# Use a custom debug image and longer timeout
-kubectl reach myapp-abc123 --to myservice:80 --image busybox --timeout 10
+kubectl reach myapp-7d4b9c-xk2lm --to google.com:443
 ```
 
-On success you see an "open" result; on failure you see the error (e.g. connection refused, timed out). Use your usual kubectl context/namespace (`-n`, `--context`, `--kubeconfig`) to target the right cluster and namespace.
+**Sample output (success):**
 
-### Flags
+```
+Connection to google.com 443 port [tcp/https] succeeded!
+```
+
+### Reach an in-cluster Service
+
+```bash
+kubectl reach frontend-abc123 --to backend:8080 -n myapp
+```
+
+**Sample output (success):**
+
+```
+Connection to backend 8080 port [tcp/http-alt] succeeded!
+```
+
+### Reach an internal IP
+
+```bash
+kubectl reach myapp-7d4b9c-xk2lm --to 10.96.0.1:443 -n default
+```
+
+**Sample output (success):**
+
+```
+Connection to 10.96.0.1 443 port [tcp/https] succeeded!
+```
+
+### Connection refused (port closed or blocked)
+
+When the target host is reachable but nothing is listening on the port (or a NetworkPolicy blocks it):
+
+```bash
+kubectl reach myapp-7d4b9c-xk2lm --to 10.0.0.5:9999
+```
+
+**Sample output:**
+
+```
+nc: can't connect to remote host (10.0.0.5): Connection refused
+```
+
+### Connection timed out
+
+When the target is unreachable (e.g. wrong network, firewall, or bad host):
+
+```bash
+kubectl reach myapp-7d4b9c-xk2lm --to 10.255.255.254:9999 --timeout 3
+```
+
+**Sample output:**
+
+```
+nc: timeout
+```
+
+### Custom debug image and timeout
+
+```bash
+kubectl reach myapp-7d4b9c-xk2lm --to myservice:80 --image busybox --timeout 10 -n myns
+```
+
+---
+
+## Flags
+
+**Plugin flags**
 
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
-| `--to` | Yes | - | Target as `host:port` (e.g. `google.com:443`, `10.0.0.5:8080`) |
-| `--image` | No | `busybox` | Debug container image |
+| `--to` | Yes | - | Target as `host:port` (e.g. `google.com:443`, `mysvc:80`) |
+| `--image` | No | `busybox` | Debug container image (must provide `nc`) |
 | `--timeout` | No | `5s` | Timeout for the connection check |
-| `-n`, `--namespace` | No | from kubeconfig | Pod namespace |
 
-Standard kubectl flags (`--kubeconfig`, `--context`, etc.) are supported via `genericclioptions`.
+**Standard kubectl flags** (from `genericclioptions`; same as other kubectl commands)
 
-## Project structure
+| Flag | Description |
+|------|--------------|
+| `-n`, `--namespace` | Pod namespace (default: from kubeconfig) |
+| `--context` | Kubernetes context |
+| `--kubeconfig` | Path to kubeconfig |
+| `--cluster` | Cluster name |
+| `--request-timeout` | Request timeout for API server calls |
+| `--server`, `-s` | API server address |
+| `--user` | User (in kubeconfig) |
+| `--token` | Bearer token |
+| `--insecure-skip-tls-verify` | Skip TLS verification |
 
-- **cmd/plugin** — entrypoint (`main.go`); builds the binary `kubectl-reach`.
-- **pkg/reach** — CLI and reach logic (Cobra command, ephemeral container, logs).
-- **pkg/version** — version string (set at build time).
-- **.github/workflows** — CI workflow (test + lint on push/PR).
+---
 
 ## Build & Install
 
 ```bash
 go mod tidy
 make build
-# Binary: bin/kubectl-reach — copy to PATH, e.g.:
 cp bin/kubectl-reach $(go env GOPATH)/bin/
 ```
 
-### Makefile
+**Makefile:** `make build` / `make test` / `make lint` / `make ci` / `make build-all` (cross-build). See `make help` or the Makefile for details.
 
-- `make build` / `make bin` — build for current platform into `bin/`.
-- `make fmt` / `make vet` / `make test` — format, vet, unit tests.
-- `make lint` — run [golangci-lint](https://golangci-lint.run/) (install separately).
-- `make ci` — fmt + vet + test + lint (run before push).
-- `make verify` — fmt + tidy + vet + test.
-- `make build-all` — cross-build for Linux/Darwin/Windows (amd64, arm64).
+---
 
-## Tests and Linting
+## Project structure
 
-- Unit tests: `go test ./pkg/... ./cmd/...` or `make test`.
-- Linter: `golangci-lint run ./...` or `make lint` (requires [golangci-lint](https://golangci-lint.run/usage/install/)).
-- CI (`.github/workflows/ci.yml`) runs test and lint on push/PR to `main` or `master`.
+- **cmd/plugin** — entrypoint; builds `kubectl-reach`.
+- **pkg/reach** — CLI and reach logic (ephemeral container, logs).
+- **pkg/version** — version (set at build time).
+- **.github/workflows** — CI (test + lint) and release (GoReleaser on tag).
 
 ## License
 
