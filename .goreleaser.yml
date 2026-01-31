@@ -4,7 +4,7 @@
 project_name: kubectl-reach
 release:
   github:
-    owner: kubectl-reach
+    owner: amdadulbari
     name: kubectl-reach
 builds:
   - id: kubectl-reach
@@ -32,6 +32,9 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     builds:
       - kubectl-reach
+    # Krew requires LICENSE in the plugin archive (extracted during install).
+    files:
+      - LICENSE
 # Krew expects the binary at archive root with name kubectl-reach (or .exe on Windows).
 # GoReleaser puts binary in root with name_template; we use binary: kubectl-reach so the file is kubectl-reach.
 # For Windows zip the binary is kubectl-reach.exe.
