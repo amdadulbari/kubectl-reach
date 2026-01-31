@@ -2,15 +2,14 @@
 
 A `kubectl` plugin that tests network connectivity **from** an existing Pod **to** a target (IP, DNS, or Service) by injecting an ephemeral debug container into the source Pod. Useful for verifying if NetworkPolicies or Service Meshes are blocking traffic.
 
-- [Krew](https://krew.sigs.k8s.io/) plugin index ready (see [deploy/krew/reach.yaml](deploy/krew/reach.yaml)).
-- Project structure follows [krew-plugin-template](https://github.com/replicatedhq/krew-plugin-template) and [Krew best practices](https://krew.sigs.k8s.io/docs/developer-guide/develop/best-practices/).
-
 ## Requirements
 
 - **Kubernetes 1.25+** (EphemeralContainers is stable).
 - No shell dependencies; pure Go. Works on Linux, macOS, and Windows.
 
 ## Usage
+
+The plugin runs **from** a given Pod (by name) and checks whether it can reach a target `host:port`. The target can be an IP, a DNS name, or a Kubernetes Service. It uses an ephemeral debug container in the source Pod, so the check runs in the same network context (NetworkPolicies, Service Mesh, node) as your workload.
 
 ```bash
 kubectl reach <source-pod-name> --to <target:port> [--namespace <ns>] [options]
@@ -19,10 +18,20 @@ kubectl reach <source-pod-name> --to <target:port> [--namespace <ns>] [options]
 ### Examples
 
 ```bash
+# Reach a public host (HTTPS)
 kubectl reach myapp-abc123 --to google.com:443
-kubectl reach myapp-abc123 --to 10.0.0.5:8080 -n myns
+
+# Reach an internal IP and port (default namespace)
+kubectl reach myapp-abc123 --to 10.0.0.5:8080
+
+# Specify namespace
+kubectl reach myapp-abc123 --to myservice:80 -n myns
+
+# Use a custom debug image and longer timeout
 kubectl reach myapp-abc123 --to myservice:80 --image busybox --timeout 10
 ```
+
+On success you see an "open" result; on failure you see the error (e.g. connection refused, timed out). Use your usual kubectl context/namespace (`-n`, `--context`, `--kubeconfig`) to target the right cluster and namespace.
 
 ### Flags
 
@@ -40,7 +49,6 @@ Standard kubectl flags (`--kubeconfig`, `--context`, etc.) are supported via `ge
 - **cmd/plugin** — entrypoint (`main.go`); builds the binary `kubectl-reach`.
 - **pkg/reach** — CLI and reach logic (Cobra command, ephemeral container, logs).
 - **pkg/version** — version string (set at build time).
-- **deploy/krew** — Krew manifest ([reach.yaml](deploy/krew/reach.yaml)).
 - **.github/workflows** — CI workflow (test + lint on push/PR).
 
 ## Build & Install
@@ -60,28 +68,6 @@ cp bin/kubectl-reach $(go env GOPATH)/bin/
 - `make ci` — fmt + vet + test + lint (run before push).
 - `make verify` — fmt + tidy + vet + test.
 - `make build-all` — cross-build for Linux/Darwin/Windows (amd64, arm64).
-- `make dist` — build and create Krew-ready tarballs in `dist/`.
-
-## Krew
-
-1. Fill in URIs and SHA256 in [deploy/krew/reach.yaml](deploy/krew/reach.yaml) (or use GoReleaser release to get URLs).
-2. Test locally: `kubectl krew install --manifest=deploy/krew/reach.yaml`
-3. Validate: `kubectl krew validate --manifest=deploy/krew/reach.yaml`
-
-## E2E scenarios (k3s / kubectl)
-
-Two live scenarios verify that the tool **detects and reports** reachability vs unreachability:
-
-1. **Reachable:** From a pod, reach `kubernetes.default.svc.cluster.local:443` → tool reports **open** (success).
-2. **Unreachable:** From another pod, reach `10.255.255.254:9999` with short timeout → tool reports **Connection timed out** (failure).
-
-See [doc/E2E-SCENARIOS.md](doc/E2E-SCENARIOS.md). Quick run:
-
-```bash
-make build
-./scripts/e2e-setup.sh      # create namespace + 2 source pods
-./scripts/e2e-scenarios.sh  # run both scenarios (PASS/FAIL)
-```
 
 ## Tests and Linting
 
