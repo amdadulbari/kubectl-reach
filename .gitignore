@@ -22,3 +22,6 @@ dist/
 *.swp
 *.swo
 *~
+
+# Local-only doc (not for GitHub)
+doc/KREW-SUBMISSION.md
