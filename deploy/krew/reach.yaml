@@ -1,0 +1,55 @@
+# Krew plugin manifest for kubectl-reach (plugin name: reach).
+# See: https://krew.sigs.k8s.io/docs/developer-guide/plugin-manifest/
+# Before submitting: replace YOUR_ORG and placeholder sha256 with release URLs/checksums.
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: reach
+spec:
+  version: "v0.1.0"
+  homepage: https://github.com/YOUR_ORG/kubectl-reach
+  shortDescription: Test network connectivity from a pod to a target (IP/DNS/Service)
+  description: |
+    Tests network connectivity from an existing Pod to a target (IP, DNS, or Service)
+    by injecting an ephemeral debug container into the source Pod. Useful for
+    verifying if NetworkPolicies or Service Meshes are blocking traffic. Requires
+    Kubernetes 1.25+ (EphemeralContainers). Does not restart application containers.
+  caveats: |
+    * Requires Kubernetes 1.25+ (EphemeralContainers is stable).
+    * The ephemeral container remains on the pod until the pod is deleted (it cannot be removed).
+  platforms:
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: amd64
+      uri: https://github.com/YOUR_ORG/kubectl-reach/releases/download/v0.1.0/kubectl-reach_v0.1.0_darwin_amd64.tar.gz
+      sha256: PLACEHOLDER_DARWIN_AMD64_SHA256
+      bin: kubectl-reach
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: arm64
+      uri: https://github.com/YOUR_ORG/kubectl-reach/releases/download/v0.1.0/kubectl-reach_v0.1.0_darwin_arm64.tar.gz
+      sha256: PLACEHOLDER_DARWIN_ARM64_SHA256
+      bin: kubectl-reach
+    - selector:
+        matchLabels:
+          os: linux
+          arch: amd64
+      uri: https://github.com/YOUR_ORG/kubectl-reach/releases/download/v0.1.0/kubectl-reach_v0.1.0_linux_amd64.tar.gz
+      sha256: PLACEHOLDER_LINUX_AMD64_SHA256
+      bin: kubectl-reach
+    - selector:
+        matchLabels:
+          os: linux
+          arch: arm64
+      uri: https://github.com/YOUR_ORG/kubectl-reach/releases/download/v0.1.0/kubectl-reach_v0.1.0_linux_arm64.tar.gz
+      sha256: PLACEHOLDER_LINUX_ARM64_SHA256
+      bin: kubectl-reach
+    - selector:
+        matchLabels:
+          os: windows
+          arch: amd64
+      uri: https://github.com/YOUR_ORG/kubectl-reach/releases/download/v0.1.0/kubectl-reach_v0.1.0_windows_amd64.tar.gz
+      sha256: PLACEHOLDER_WINDOWS_AMD64_SHA256
+      bin: kubectl-reach.exe

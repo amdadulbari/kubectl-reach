@@ -1,0 +1,43 @@
+# golangci-lint config for kubectl-reach.
+# Run: golangci-lint run ./...
+# See: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  go: '1.21'
+
+linters:
+  enable:
+    - errcheck
+    - gofmt
+    - goimports
+    - govet
+    - ineffassign
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+  disable:
+    - deadcode
+    - varcheck
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  unused:
+    check-exported: false
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - unparam
+  max-issues-per-linter: 0
+  max-same-issues: 0

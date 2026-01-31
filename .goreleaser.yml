@@ -1,0 +1,37 @@
+# GoReleaser config for kubectl-reach (Krew plugin).
+# See: https://goreleaser.com/
+# Trigger: push tag v*.*.* (e.g. git tag v0.1.0 && git push --tags)
+project_name: kubectl-reach
+release:
+  github:
+    owner: kubectl-reach
+    name: kubectl-reach
+builds:
+  - id: kubectl-reach
+    main: ./cmd/plugin
+    binary: kubectl-reach
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/kubectl-reach/kubectl-reach/pkg/version.Version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+archives:
+  - id: kubectl-reach
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    builds:
+      - kubectl-reach
+# Krew expects the binary at archive root with name kubectl-reach (or .exe on Windows).
+# GoReleaser puts binary in root with name_template; we use binary: kubectl-reach so the file is kubectl-reach.
+# For Windows zip the binary is kubectl-reach.exe.
